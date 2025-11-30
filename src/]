@@ -1,0 +1,37 @@
+#include <stdlib.h>
+#include <stdint.h>
+#include <math.h>
+#include <assert.h>
+
+// NOTE(vanya): Helper types
+typedef uint8_t bool;
+#define true (uint8_t)1
+#define false (uint8_t)0
+
+typedef int8_t i8;
+typedef int16_t i16;
+typedef int32_t i32;
+typedef int64_t i64;
+typedef uint8_t u8;
+typedef uint16_t u16;
+typedef uint32_t u32;
+typedef uint64_t u64;
+typedef float f32;
+typedef double f64;
+
+// NOTE(vanya): STL abstraction
+#define P_malloc(size) malloc(size)
+#define P_realloc(old_ptr, size) realloc(old_ptr, size)
+#define P_free(ptr) free(ptr)
+
+#define P_strdup(ptr) strdup(prt)
+#define P_vsnprintf(buffer, size, format, ...) vsnprintf(buffer, size, format, ##__VA_ARGS__)
+
+#define P_roundi(f) (i32)round(f)
+#define P_floori(f) (i32)floor(f)
+#define P_roundf(f) (f32)round(f)
+#define P_floorf(f) (f32)floor(f)
+
+#define P_assert(exp, msg) \
+    if (!exp) { fprinf(stderr, "Assetion failed! - " msg); exit(1); }
+

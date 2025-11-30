@@ -1,34 +1,10 @@
-#define WIN32
-
 #ifdef __linux__
-    #include <stdlib.h>
-    #include <stdio.h>
-    #include <stdint.h>
-    #include <assert.h>
-
+    #include "stl_linux_x86_64.c"
     #include <fnmatch.h>
-    
-    #define P_assert assert
 #endif
 #ifdef WIN32
-    #include <stdlib.h>
-    #include <stdio.h>
-    #include <stdint.h>
-    #include <assert.h>
-
     #include <Shlwapi.h>
-    
-    #define P_assert assert
-    #define P_free free
-    #define P_strdup strdup
-    #define P_malloc malloc
-    #define P_calloc calloc
-    #define P_vsnprintf vsnprintf
 #endif
-
-typedef uint8_t bool;
-#define true 1
-#define false 0
 
 
 char* bytes_to_human_readable(size_t bytes);
@@ -41,12 +17,13 @@ bool str_wildcard_match(char* str, char* pattern);
 
 char* bytes_to_human_readable(size_t bytes)
 {
+    P_assert(bytes >= 0, "Bytes must be above or equal 0!");
+
     const char* units[] = {"B", "KB", "MB", "GB", "TB", "PB"};
+    i32 units_count = sizeof(units) / sizeof(char*);
 
-    const int units_count = sizeof(units) / sizeof(char*);
-    double count = (double)bytes;
+    size_t count = (size_t)bytes;
     int i = 0;
-
     while (count >= 1024.0 && i < units_count) {
         count /= 1024.0;
         i++;
@@ -58,7 +35,7 @@ char* bytes_to_human_readable(size_t bytes)
 
 void str_path_ensure_forward_slash(char* path)
 {
-    P_assert(path != NULL);
+    P_assert(path != NULL, "No path provided!");
 
     char* ptr_cpy = path;
     while (*ptr_cpy != '\0') {
@@ -71,16 +48,19 @@ void str_path_ensure_forward_slash(char* path)
 
 bool str_starts_with(char* str, char* prefix)
 {
-    size_t len_prefix = strlen(prefix);
+    size_t len_prefix = P_strlen(prefix);
 
-    P_assert(strlen(str) > len_prefix);
+    P_assert(P_strlen(str) > len_prefix, "Prefix longer than provided string!");
 
-    return strncmp(str, prefix, len_prefix) == 0;
+    return P_strncmp(str, prefix, len_prefix) == 0;
 }
 
 
 char* str_override(char* dest, char* str)
 {
+    P_assert(dest != NULL, "No destination string provided!");
+    P_assert(str != NULL, "No override string provided!");
+
     P_free(dest);
     char* new_dest = P_strdup(str);
     return new_dest;
@@ -96,7 +76,7 @@ char* str_new_formatted(const char* fmt, ...) {
 
     char* str = (char*)P_calloc(1, str_len);
     if (!str) {
-        SDL_Log("Failed to allocate enough memory for the new string.");
+        LOG_ERROR("Failed to allocate enough memory for the new string.");
         return NULL;
     }
 

@@ -1,35 +1,10 @@
-#include "str_utils.h"
-
-/*
- * Platform macros
-*/
-
-#include <stdlib.h>
-#include <stdio.h>
-
-#define SDL_Log(format_string, ...) printf(format_string, ##__VA_ARGS__)
-#define SDL
+#include "str_utils.c"
 
 /*
  * Macros
 */
 
 #define MAX_PATH_LENGTH 512
-
-#define __FILENAME__ (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
-
-#define BYTES_TO_PB(b) (double)b / (1024.0 * 1024.0 * 1024.0 * 1024.0 * 1024.0)
-
-#define LOG_DEBUG(format_string, ...) \
-    SDL_Log("debug:    %s:%d %s - " format_string "\n", __FILENAME__, __LINE__, __func__, ##__VA_ARGS__)
-#define LOG_INFO(format_string, ...) \
-    SDL_Log("info:     %s:%d %s - " format_string "\n", __FILENAME__, __LINE__, __func__, ##__VA_ARGS__)
-#define LOG_WARNING(format_string, ...) \
-    SDL_Log("warning:  %s:%d %s - " format_string "\n", __FILENAME__, __LINE__, __func__, ##__VA_ARGS__)
-#define LOG_ERROR(format_string, ...) \
-    SDL_Log("error:    %s:%d %s - " format_string "\n", __FILENAME__, __LINE__, __func__, ##__VA_ARGS__)
-#define LOG_CRITICAL(format_string, ...) \
-    SDL_Log("critical: %s:%d %s - " format_string "\n", __FILENAME__, __LINE__, __func__, ##__VA_ARGS__)
 
 /*
 ** Structs
@@ -48,7 +23,7 @@ typedef struct {
 
 void scan_dir(char* path);
 
-SDL_EnumerationResult list_dir(void *userdata, const char *dirname, const char *fname);
+P_EnumerationResult list_dir(void *userdata, const char *dirname, const char *fname);
 
 size_t get_file_size(char* path);
 
@@ -64,8 +39,8 @@ int exclusion_patterns_count = 0;
 int main(int args_count, char* args[])
 {
     // Parse args
-    char* in_path = SDL_strdup("assets");
-    char* out_path = SDL_strdup("assets.bin");
+    char* in_path = P_strdup("assets");
+    char* out_path = P_strdup("assets.bin");
 
     for (int arg_index = 1; arg_index < args_count; arg_index++) {
         char* arg = args[arg_index];
@@ -80,9 +55,9 @@ int main(int args_count, char* args[])
 
         if (str_starts_with(arg, "-x:")) {
             size_t new_size = sizeof(char*) * (exclusion_patterns_count + 1);
-            exclusion_patterns = SDL_realloc(exclusion_patterns, new_size);
+            exclusion_patterns = P_realloc(exclusion_patterns, new_size);
 
-            exclusion_patterns[exclusion_patterns_count++] = SDL_strdup(arg + 3);
+            exclusion_patterns[exclusion_patterns_count++] = P_strdup(arg + 3);
         }
     }
 
@@ -96,17 +71,17 @@ int main(int args_count, char* args[])
 
     // Create output file file
     LOG_INFO("Creating output file");
-    SDL_IOStream* out_file = SDL_IOFromFile(out_path, "w");
+    P_IOStream* out_file = P_IOFromFile(out_path, "w");
     if (!out_file) {
-        LOG_ERROR("Failed to open output file! SDL error:\n%s", SDL_GetError());
+        LOG_ERROR("Failed to open output file! SDL error:\n%s", P_GetError());
         return 1;
     }
 
     // Header
     LOG_DEBUG("Writing header");
-    SDL_WriteIO(out_file, &in_files_count, sizeof(int));
+    P_WriteIO(out_file, &in_files_count, sizeof(int));
 
-    size_t header_size = SDL_TellIO(out_file);
+    size_t header_size = P_TellIO(out_file);
 
     // File index
     LOG_DEBUG("Creating file index");
@@ -117,7 +92,7 @@ int main(int args_count, char* args[])
     // then raw data of each file, one after another.
     // We use increment this variable evry time a file's data is written to track when the next one begins.
     size_t file_entires_size = sizeof(FileEntry) * in_files_count;
-    file_entires = SDL_malloc(file_entires_size);
+    file_entires = P_malloc(file_entires_size);
 
     size_t index_section_size = 0;
     size_t file_offset = 0;
@@ -129,8 +104,8 @@ int main(int args_count, char* args[])
 
         // Path
         f->path_size = strlen(file_path) + 1;
-        SDL_memset(f->path, 0, MAX_PATH_LENGTH);
-        SDL_memcpy(f->path, file_path, f->path_size + 1);
+        P_memset(f->path, 0, MAX_PATH_LENGTH);
+        P_memcpy(f->path, file_path, f->path_size + 1);
 
         // File size
         size_t file_size = get_file_size(f->path);
@@ -171,12 +146,12 @@ int main(int args_count, char* args[])
         FileEntry* f = &file_entires[i];
         
         // Path
-        SDL_WriteIO(out_file, &f->path_size, sizeof(int));
-        SDL_WriteIO(out_file, f->path, f->path_size);
+        P_WriteIO(out_file, &f->path_size, sizeof(int));
+        P_WriteIO(out_file, f->path, f->path_size);
 
         // Offset + size
-        SDL_WriteIO(out_file, &f->file_offset, sizeof(size_t));
-        SDL_WriteIO(out_file, &f->file_size, sizeof(size_t));
+        P_WriteIO(out_file, &f->file_offset, sizeof(size_t));
+        P_WriteIO(out_file, &f->file_size, sizeof(size_t));
     }
 
     // Write file contents
@@ -186,42 +161,42 @@ int main(int args_count, char* args[])
         
         LOG_INFO("Dumping %s: %s", bytes_to_human_readable(file_entry->file_size), file_entry->path);
 
-        SDL_IOStream* file_io = SDL_IOFromFile(file_entry->path, "r");
+        P_IOStream* file_io = P_IOFromFile(file_entry->path, "r");
         if (!file_io) {
-            LOG_ERROR("Failed to open file: %s, skipping! SDL error:\n%s", file_entry->path, SDL_GetError());
+            LOG_ERROR("Failed to open file: %s, skipping! SDL error:\n%s", file_entry->path, P_GetError());
             continue;
         }
 
-        void* file_buffer = SDL_malloc(file_entry->file_size);
+        void* file_buffer = P_malloc(file_entry->file_size);
         if (!file_buffer) {
-            LOG_ERROR("Failed to allocate file buffer: %s, skipping! SDL error:\n%s", file_entry->path, SDL_GetError());
-            SDL_CloseIO(file_io);
+            LOG_ERROR("Failed to allocate file buffer: %s, skipping! SDL error:\n%s", file_entry->path, P_GetError());
+            P_CloseIO(file_io);
             continue;
         }
 
-        size_t read_bytes = SDL_ReadIO(file_io, file_buffer, file_entry->file_size);
+        size_t read_bytes = P_ReadIO(file_io, file_buffer, file_entry->file_size);
         if (read_bytes < file_entry->file_size) {
-            LOG_ERROR("Failed to read the input file fully! Written: %zu/%zu bytes. SDL error:\n%s", read_bytes, file_entry->file_size, SDL_GetError());
-            SDL_free(file_buffer);
-            SDL_CloseIO(file_io);
+            LOG_ERROR("Failed to read the input file fully! Written: %zu/%zu bytes. SDL error:\n%s", read_bytes, file_entry->file_size, P_GetError());
+            P_free(file_buffer);
+            P_CloseIO(file_io);
             continue;
         }
 
-        size_t written_bytes = SDL_WriteIO(out_file, file_buffer, file_entry->file_size);
+        size_t written_bytes = P_WriteIO(out_file, file_buffer, file_entry->file_size);
         if (written_bytes < file_entry->file_size) {
-            LOG_ERROR("Failed to fully write the input file into the output file! Written: %zu/%zu bytes. SDL error:\n%s", written_bytes, file_entry->file_size, SDL_GetError());
-            SDL_free(file_buffer);
-            SDL_CloseIO(file_io);
+            LOG_ERROR("Failed to fully write the input file into the output file! Written: %zu/%zu bytes. SDL error:\n%s", written_bytes, file_entry->file_size, P_GetError());
+            P_free(file_buffer);
+            P_CloseIO(file_io);
             continue;
         }
 
-        SDL_free(file_buffer);
-        SDL_CloseIO(file_io);
+        P_free(file_buffer);
+        P_CloseIO(file_io);
     }
 
-    size_t out_file_size = SDL_TellIO(out_file);
+    size_t out_file_size = P_TellIO(out_file);
 
-    SDL_CloseIO(out_file);
+    P_CloseIO(out_file);
 
     LOG_INFO("%s created successfully! Final size: %s", out_path, bytes_to_human_readable(out_file_size));
 
@@ -231,22 +206,22 @@ int main(int args_count, char* args[])
 
 void scan_dir(char* path)
 {
-    if (!SDL_EnumerateDirectory(path, list_dir, NULL)) {
-        LOG_ERROR("Failed to list directory: %s! SDL error:\n%s", path, SDL_GetError());
+    if (!P_EnumerateDirectory(path, list_dir, NULL)) {
+        LOG_ERROR("Failed to list directory: %s! SDL error:\n%s", path, P_GetError());
     }
 }
 
 
-SDL_EnumerationResult list_dir(void *userdata, const char *dir_name, const char *file_name) {
+P_EnumerationResult list_dir(void *userdata, const char *dir_name, const char *file_name) {
     char full_path[MAX_PATH_LENGTH];
-    SDL_snprintf(full_path, MAX_PATH_LENGTH, "%s%s", dir_name, file_name);
+    P_snprintf(full_path, MAX_PATH_LENGTH, "%s%s", dir_name, file_name);
 
-    SDL_PathInfo info;
-    if (SDL_GetPathInfo(full_path, &info)) {
-        if (info.type == SDL_PATHTYPE_DIRECTORY) {
+    P_PathInfo info;
+    if (P_GetPathInfo(full_path, &info)) {
+        if (info.type == P_PATHTYPE_DIRECTORY) {
             scan_dir(full_path);
         }
-        else if (info.type == SDL_PATHTYPE_FILE) {
+        else if (info.type == P_PATHTYPE_FILE) {
             // Check if excluded
             bool excluded = false;
 
@@ -262,35 +237,35 @@ SDL_EnumerationResult list_dir(void *userdata, const char *dir_name, const char 
 
             if (!excluded) {
                 size_t new_size = sizeof(char*) * (in_files_count + 1);
-                in_files_paths = SDL_realloc(in_files_paths, new_size);
+                in_files_paths = P_realloc(in_files_paths, new_size);
                 
-                in_files_paths[in_files_count] = SDL_strdup(full_path);
+                in_files_paths[in_files_count] = P_strdup(full_path);
 
                 in_files_count++;
             }
         }
         
     } else {
-        LOG_ERROR("Failed to get path info for: %s! SDL error:\n%s", full_path, SDL_GetError());
+        LOG_ERROR("Failed to get path info for: %s! SDL error:\n%s", full_path, P_GetError());
     }
 
-    return SDL_ENUM_CONTINUE;
+    return P_ENUM_CONTINUE;
 }
 
 
 size_t get_file_size(char* path)
 {
-    SDL_IOStream* f = SDL_IOFromFile(path, "r");
+    P_IOStream* f = P_IOFromFile(path, "r");
     if (!f) {
-        LOG_ERROR("Failed to open file: %s! SDL error:\n%s", path, SDL_GetError());
+        LOG_ERROR("Failed to open file: %s! SDL error:\n%s", path, P_GetError());
         return 0;
     }
 
-    SDL_SeekIO(f, 0, SDL_IO_SEEK_END);
+    P_SeekIO(f, 0, P_IO_SEEK_END);
 
-    size_t file_size = SDL_TellIO(f);
+    size_t file_size = P_TellIO(f);
 
-    SDL_CloseIO(f);
+    P_CloseIO(f);
 
     return file_size;
 }

@@ -6,10 +6,15 @@ done:
 - image blit with scale and offset
 - tilemap
 - update linux platform layer
+- separate STL abstraction into own .c file
+- port packer to use new STL layer
+- logging macros
+
+wip:
+- port i/o system to own platform layer
 
 todays tasks:
 - update windows platform layer
-- port the packer
 - bmp loading
 
 todo:

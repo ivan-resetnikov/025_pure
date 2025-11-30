@@ -1,33 +1,8 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <math.h>
+#include "stl_linux_x86_64.c"
 #include <unistd.h>
 #include <X11/Xlib.h>
 #include <X11/extensions/Xrandr.h>
 
-
-// NOTE(vanya): STL abstraction
-#define P_malloc(size) malloc(size)
-#define P_realloc(old_ptr, size) realloc(old_ptr, size)
-#define P_round(f) (int)round(f)
-#define P_floor(f) (int)floor(f)
-
-// NOTE(vanya): Helper types
-typedef uint8_t bool;
-#define true (uint8_t)1
-#define false (uint8_t)0
-
-typedef int8_t i8;
-typedef int16_t i16;
-typedef int32_t i32;
-typedef int64_t i64;
-typedef uint8_t u8;
-typedef uint16_t u16;
-typedef uint32_t u32;
-typedef uint64_t u64;
-typedef float f32;
-typedef double f64;
 
 // NOTE(vanya): Frame backbuffer
 #define PIXEL_SCALE 10
@@ -40,7 +15,6 @@ u32* backbuffer = NULL;
 bool running = true;
 uint64_t tick = 0;
 
-
 // NOTE(vanya): Game functions
 void P_ready();
 void P_iterate();
@@ -50,11 +24,11 @@ u32 P_pack_rgba(u8 r, u8 g, u8 b, u8 a);
 
 
 // NOTE(vanya): Entrypoint
-int main()
+int main(int arg_count, char* args[])
 {
     Display* display = XOpenDisplay(NULL);
     if (!display) {
-        printf("Failed to open display\n");
+        LOG_CRITICAL("Failed to open display");
         return 1;
     }
 
@@ -82,7 +56,7 @@ int main()
 
     XImage* img = XCreateImage(display, DefaultVisual(display, default_screen_index),
                                DefaultDepth(display, default_screen_index),
-                               ZPixmap, 0, malloc(backbuffer_width * backbuffer_height * 4),
+                               ZPixmap, 0, P_malloc(backbuffer_width * backbuffer_height * 4),
                                backbuffer_width, backbuffer_height, 32, 0);
 
     backbuffer = (u32*)img->data;
