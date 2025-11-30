@@ -1,0 +1,27 @@
+done:
+- linux platform layer
+- windows platform layer
+- test frame graphics
+- most straightforward image rendering
+- image blit with scale and offset
+- tilemap
+- update linux platform layer
+
+todays tasks:
+- update windows platform layer
+- port the packer
+- bmp loading
+
+todo:
+- create first level
+- player entity
+- walking around
+- collision
+- character entity
+- interaction
+- dialogue system
+
+ideas:
+- sound buffer
+- inject shaders into blit
+
