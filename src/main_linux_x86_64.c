@@ -13,7 +13,7 @@ u32* backbuffer = NULL;
 
 // NOTE(vanya): Window 
 bool running = true;
-uint64_t tick = 0;
+u64 tick = 0;
 
 // NOTE(vanya): Game functions
 void P_ready();
@@ -49,7 +49,7 @@ int main(int arg_count, char* args[])
     XMapWindow(display, win);
 
     // Window title
-    XStoreName(display, win, "025_rpg");
+    XStoreName(display, win, "025_pure");
 
     // Backbuffer image
     GC gc = XCreateGC(display, win, 0, NULL);
@@ -103,7 +103,7 @@ int main(int arg_count, char* args[])
         // Tick
         P_iterate();
 
-	    // Flush
+        // Flush
         XPutImage(display, win, gc, img, 0, 0, 0, 0, backbuffer_width, backbuffer_height);
         XFlush(display);
 

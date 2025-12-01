@@ -49,7 +49,7 @@ build_windows_x86_64() {
     # Compile flags
     compile_flags=""
     compile_flags="${compile_flags} -Wall"
-    compile_flags="${compile_flags} -Werror"
+    # compile_flags="${compile_flags} -Werror"
     compile_flags="${compile_flags} -g"
 
     # Source files
@@ -66,7 +66,7 @@ build_windows_x86_64() {
     # Compile
     mkdir -p "./bin"
 
-    compile_command="${clang_bin} ${compile_flags} ${include_flags} ${src_files} ${link_flags} -o ./bin/main"
+    compile_command="${clang_bin} ${compile_flags} ${include_flags} ${src_files} ${link_flags} -o ./bin/main.exe"
 
     echo "${clang_bin}:"
     echo "${compile_command}"
@@ -93,6 +93,6 @@ if [[ "$1" == "windows_x86_64" ]]; then
     goto end
 fi
 
-build_linux_x86_64
+build_windows_x86_64
 
 :end

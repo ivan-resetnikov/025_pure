@@ -31,9 +31,6 @@ Tilemap tm;
 void load_bmp(Image* image);
 void draw_tilemap(Tilemap* tilemap);
 void blit_image_to_frame_simple(Image* image, int offset_x, int offset_y, float scale);
-int min(int a, int b);
-int max(int a, int b);
-int clampi(int v, int from, int to);
 
 
 void P_ready()
@@ -41,8 +38,8 @@ void P_ready()
     load_bmp(&img_diorite);
 
     // Test tilemap
-    tm.width = 10;
-    tm.height = 10;
+    tm.width = 32;
+    tm.height = 32;
     tm.tile_width = 3;
     tm.tile_height = 3;
     tm.tiles = P_malloc(sizeof(Tile) * tm.width * tm.height);
@@ -103,10 +100,10 @@ void blit_image_to_frame_simple(Image* image, int offset_x, int offset_y, float 
 {
     // AABB
     AABB aabb;
-    aabb.start_x = clampi(offset_x, 0, backbuffer_width);
-    aabb.start_y = clampi(offset_y, 0, backbuffer_height);
-    aabb.end_x = clampi(offset_x + P_floori((float)image->width * scale), 0, backbuffer_width);
-    aabb.end_y = clampi(offset_y + P_floori((float)image->height * scale), 0, backbuffer_height);
+    aabb.start_x = P_clamp_i32(offset_x, 0, backbuffer_width);
+    aabb.start_y = P_clamp_i32(offset_y, 0, backbuffer_height);
+    aabb.end_x = P_clamp_i32(offset_x + P_floori((float)image->width * scale), 0, backbuffer_width);
+    aabb.end_y = P_clamp_i32(offset_y + P_floori((float)image->height * scale), 0, backbuffer_height);
 
     int x = 0;
     for(int screen_x = aabb.start_x; screen_x < aabb.end_x; screen_x++) {
@@ -124,20 +121,5 @@ void blit_image_to_frame_simple(Image* image, int offset_x, int offset_y, float 
         }
         x++;
     }
-}
-
-inline int min(int a, int b)
-{
-    return a < b ? a : b;
-}
-
-inline int max(int a, int b)
-{
-    return a > b ? a : b;
-}
-
-int clampi(int v, int from, int to)
-{
-    return min(max(from, v), to);
 }
 

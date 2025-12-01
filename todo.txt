@@ -9,12 +9,12 @@ done:
 - separate STL abstraction into own .c file
 - port packer to use new STL layer
 - logging macros
+- update windows platform layer
 
 wip:
 - port i/o system to own platform layer
 
 todays tasks:
-- update windows platform layer
 - bmp loading
 
 todo:

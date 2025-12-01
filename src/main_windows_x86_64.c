@@ -1,13 +1,30 @@
-#include "main.c"
-
+#include "stl_windows_x86_64.c"
 #include <windows.h>
-#include <stdint.h>
 
-static BITMAPINFO bmi;
-static HWND hwnd;
-static HDC hdc;
-static LARGE_INTEGER perf_freq;
-static uint64_t refresh_rate = 60;
+
+BITMAPINFO bmi;
+HWND hwnd;
+HDC hdc;
+u64 refresh_rate = 60;
+
+// NOTE(vanya): Frame backbuffer
+#define PIXEL_SCALE 10
+
+int backbuffer_width = 640;
+int backbuffer_height = 480;
+u32* backbuffer = NULL;
+
+// NOTE(vanya): Window 
+bool running = true;
+u64 tick = 0;
+
+// NOTE(vanya): Game functions
+void P_ready();
+void P_iterate();
+void P_clear_backbuffer(u8 r, u8 g, u8 b);
+void P_set_pixel(int x, int y, u8 r, u8 g, u8 b);
+u32 P_pack_rgba(u8 r, u8 g, u8 b, u8 a);
+
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
@@ -26,12 +43,12 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE prev, LPSTR cmd, int show)
     WNDCLASS wc = {0};
     wc.lpfnWndProc = WndProc;
     wc.hInstance = hInst;
-    wc.lpszClassName = "025_rpg";
+    wc.lpszClassName = "025_pure";
     wc.hCursor = LoadCursor(NULL, IDC_ARROW);
     RegisterClass(&wc);
 
     hwnd = CreateWindowEx(
-        0, wc.lpszClassName, "025_rpg",
+        0, wc.lpszClassName, "025_pure",
         WS_OVERLAPPEDWINDOW,
         CW_USEDEFAULT, CW_USEDEFAULT,
         backbuffer_width, backbuffer_height,
@@ -59,10 +76,10 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE prev, LPSTR cmd, int show)
         refresh_rate = dm.dmDisplayFrequency;
     }
 
-    uint32_t frame_active_us = (uint32_t)(1000000.0 / refresh_rate);
-    uint32_t frame_inactive_us = (uint32_t)(1000000.0 / 30.0);
+    u32 frame_active_us = (u32)(1000000.0 / refresh_rate);
+    u32 frame_inactive_us = (u32)(1000000.0 / 10.0);
 
-    ready();
+    P_ready();
 
     MSG msg;
     while (running) {
@@ -71,7 +88,7 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE prev, LPSTR cmd, int show)
             DispatchMessage(&msg);
         }
 
-        iterate();
+        P_iterate();
 
         StretchDIBits(
             hdc,
@@ -88,8 +105,27 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE prev, LPSTR cmd, int show)
     return 0;
 }
 
-void set_pixel(int x, int y, u8 r, u8 g, u8 b)
+void P_clear_backbuffer(u8 r, u8 g, u8 b)
 {
-    backbuffer[y * backbuffer_width + x] = (u32)(b | (g << 8) | (r << 16) | 0xFF000000);
+    // TODO(vanya): Make use of SIMD since it is 64 bit architecture
+    
+    u32 color = P_pack_rgba(r, g, b, 255);
+    size_t count = backbuffer_width * backbuffer_height;
+
+    for (size_t i = 0; i < count; i++) {
+        backbuffer[i] = color;
+    }
 }
 
+void P_set_pixel(int x, int y, u8 r, u8 g, u8 b)
+{
+    backbuffer[y * backbuffer_width + x] = P_pack_rgba(r, g, b, 255);
+}
+
+inline u32 P_pack_rgba(u8 r, u8 g, u8 b, u8 a)
+{
+    return (u32)((b) | (g << 8) | (r << 16) | (a << 24) | 0xFF000000);
+}
+
+// NOTE(vanya): Payload - the game
+#include "main.c"
