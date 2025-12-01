@@ -1,14 +1,6 @@
 #include "str_utils.c"
 
-/*
- * Macros
-*/
-
 #define MAX_PATH_LENGTH 512
-
-/*
-** Structs
-*/
 
 typedef struct {
     int path_size;
@@ -46,11 +38,11 @@ int main(int args_count, char* args[])
         char* arg = args[arg_index];
 
         if (str_starts_with(arg, "-i:")) {
-            in_path = str_override(in_path, arg + strlen("-i:"));
+            in_path = str_override(in_path, arg + P_stlen("-i:"));
         }
 
         if (str_starts_with(arg, "-o:")) {
-            out_path = str_override(out_path, arg + strlen("-o:"));
+            out_path = str_override(out_path, arg + P_stlen("-o:"));
         }
 
         if (str_starts_with(arg, "-x:")) {
@@ -76,18 +68,18 @@ int main(int args_count, char* args[])
         LOG_ERROR("Failed to open output file! SDL error:\n%s", P_GetError());
         return 1;
     }
-
+    
     // Header
     LOG_DEBUG("Writing header");
     P_WriteIO(out_file, &in_files_count, sizeof(int));
-
+    
     size_t header_size = P_TellIO(out_file);
-
+    
     // File index
     LOG_DEBUG("Creating file index");
     FileEntry* file_entires = NULL;
     int file_entires_count = 0;
-
+    
     // We will first write the header & the file entires index then pack
     // then raw data of each file, one after another.
     // We use increment this variable evry time a file's data is written to track when the next one begins.
@@ -103,7 +95,7 @@ int main(int args_count, char* args[])
         FileEntry* f = &file_entires[file_entires_count++];
 
         // Path
-        f->path_size = strlen(file_path) + 1;
+        f->path_size = P_stlen(file_path) + 1;
         P_memset(f->path, 0, MAX_PATH_LENGTH);
         P_memcpy(f->path, file_path, f->path_size + 1);
 
@@ -206,6 +198,7 @@ int main(int args_count, char* args[])
 
 void scan_dir(char* path)
 {
+    WalkDir(startPath);
     if (!P_EnumerateDirectory(path, list_dir, NULL)) {
         LOG_ERROR("Failed to list directory: %s! SDL error:\n%s", path, P_GetError());
     }

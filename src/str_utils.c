@@ -1,8 +1,9 @@
-#ifdef __linux__
+#ifdef P_LINUX_X86_64
     #include "stl_linux_x86_64.c"
     #include <fnmatch.h>
 #endif
-#ifdef WIN32
+#ifdef P_WINDOWS_X86_64
+    #include "stl_windows_x86_64.c"
     #include <Shlwapi.h>
 #endif
 

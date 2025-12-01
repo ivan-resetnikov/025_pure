@@ -1,3 +1,4 @@
+// NOTE(vanya): STL abstraction
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -21,23 +22,20 @@ typedef uint64_t u64;
 typedef float f32;
 typedef double f64;
 
-// NOTE(vanya): STL abstraction
+// NOTE(vanya): Memory functions
 #define P_memset(dest, fill_byte, size) memset(dest, fill_byte, size)
 #define P_malloc(size) malloc(size)
 #define P_calloc(num, size) calloc(num, size)
 #define P_realloc(old_ptr, size) realloc(old_ptr, size)
 #define P_free(ptr) free(ptr)
 
+//NOTE(vanya): String functions 
 #define P_strlen(str) strlen(str)
 #define P_strncmp(str_a, str_b, size) strncmp(str_a, str_b, size)
 #define P_strdup(str) strdup(str)
 #define P_vsnprintf(buffer, size, format, vargs) vsnprintf(buffer, size, format, vargs)
 
-#define P_roundi(f) (i32)round(f)
-#define P_floori(f) (i32)floor(f)
-#define P_roundf(f) (f32)round(f)
-#define P_floorf(f) (f32)floor(f)
-
+// NOTE(vanya): Debugging macros
 #define P_assert(exp, msg) \
     { if (!(exp)) { fprintf(stderr, "Assetion failed! - " msg); exit(1); } }
 
@@ -55,3 +53,61 @@ typedef double f64;
 #define LOG_CRITICAL(format_string, ...) \
     fprintf(stderr, "critical: %s:%d %s - " format_string "\n", __FILENAME__, __LINE__, __func__, ##__VA_ARGS__)
 
+// NOTE(vanya): File IO functions
+#define P_fopen(path, mode) fopen(path, mode)
+#define P_fclose(io) fclose(io)
+#define P_fflush(io) fflush(io)
+
+#define P_fread(io, buf , size) fread(buf, size, 1, io)
+#define P_fwrite(io, buf, size) fwrite(buf, size, 1, io)
+
+#define P_fgetc(io) fgetc(io)
+#define P_fputc(io, c) fputc(c, io)
+
+#define P_ftell(io) ftell(io)
+#define P_fseek(io, offset, origin) fseek(io, offset, origin)
+#define P_frewind(io) frewind(io)
+
+#define P_ferror(io) ferror(io)
+#define P_f_print_error() perror("OS error")
+#define P_fremove(path) remove(path)
+#define P_frename(path_old, path_new) rename(path_old, path_new)
+
+// NOTE(vanya): Math helper functions
+#define P_round_i32(f) (i32)round(f)
+#define P_floor_i32(f) (i32)floor(f)
+#define P_round_f32(f) (f32)round(f)
+#define P_floor_f32(f) (f32)floor(f)
+
+#define P_TEMPLATE_MIN_MAX_CLAMP(T) \
+    T P_min_##T(T a, T b) \
+    { \
+        return a < b ? a : b; \
+    } \
+    \
+    T P_max_##T(T a, T b) \
+    { \
+        return a > b ? a : b; \
+    } \
+    \
+    T P_clamp_##T(T v, T from, T to) \
+    { \
+        return P_min_##T(P_max_##T(from, v), to); \
+    } \
+
+P_TEMPLATE_MIN_MAX_CLAMP(i64)
+P_TEMPLATE_MIN_MAX_CLAMP(i32)
+P_TEMPLATE_MIN_MAX_CLAMP(i16)
+P_TEMPLATE_MIN_MAX_CLAMP(i8)
+P_TEMPLATE_MIN_MAX_CLAMP(u64)
+P_TEMPLATE_MIN_MAX_CLAMP(u32)
+P_TEMPLATE_MIN_MAX_CLAMP(u16)
+P_TEMPLATE_MIN_MAX_CLAMP(u8)
+P_TEMPLATE_MIN_MAX_CLAMP(f64)
+P_TEMPLATE_MIN_MAX_CLAMP(f32)
+
+// NOTE(vanya): File IO functions - Extras
+void P_walk_dir()
+{
+    // TODO
+}

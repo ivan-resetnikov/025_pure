@@ -102,14 +102,14 @@ void blit_image_to_frame_simple(Image* image, int offset_x, int offset_y, float 
     AABB aabb;
     aabb.start_x = P_clamp_i32(offset_x, 0, backbuffer_width);
     aabb.start_y = P_clamp_i32(offset_y, 0, backbuffer_height);
-    aabb.end_x = P_clamp_i32(offset_x + P_floori((float)image->width * scale), 0, backbuffer_width);
-    aabb.end_y = P_clamp_i32(offset_y + P_floori((float)image->height * scale), 0, backbuffer_height);
+    aabb.end_x = P_clamp_i32(offset_x + P_floor_i32((float)image->width * scale), 0, backbuffer_width);
+    aabb.end_y = P_clamp_i32(offset_y + P_floor_i32((float)image->height * scale), 0, backbuffer_height);
 
     int x = 0;
     for(int screen_x = aabb.start_x; screen_x < aabb.end_x; screen_x++) {
         int y = 0;
         for(int screen_y = aabb.start_y; screen_y < aabb.end_y; screen_y++) {
-            u32 pixel = image->data[P_floori((float)y / scale) * image->width + P_floori((float)x / scale)];
+            u32 pixel = image->data[P_floor_i32((float)y / scale) * image->width + P_floor_i32((float)x / scale)];
             
             uint8_t a = (pixel >> 24) & 0xFF; // NOTE(vanya): We can later use alpha channel to sample the framebuffer and blend the colors
             uint8_t r = (pixel >> 16) & 0xFF;

@@ -6,6 +6,7 @@ build_linux_x86_64() {
 
     # Compile flags
     compile_flags=""
+    compile_flags="${compile_flags} -DP_LINUX_X86_64"
     compile_flags="${compile_flags} -Wall"
     # compile_flags="${compile_flags} -Werror"
     compile_flags="${compile_flags} -g"
@@ -48,6 +49,7 @@ build_windows_x86_64() {
 
     # Compile flags
     compile_flags=""
+    compile_flags="${compile_flags} -DP_WINDOWS_X86_64"
     compile_flags="${compile_flags} -Wall"
     # compile_flags="${compile_flags} -Werror"
     compile_flags="${compile_flags} -g"
