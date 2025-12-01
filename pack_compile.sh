@@ -4,7 +4,8 @@ clang_bin="clang"
 
 # Compiler flags
 compiler_flags=""
-compiler_flags="${compiler_flags} -DP_WINDOWS_X86_64"
+#compiler_flags="${compiler_flags} -DP_WINDOWS_X86_64"
+compiler_flags="${compiler_flags} -DP_LINUX_X86_64"
 
 # Source files
 src_path="./src"

@@ -5,6 +5,9 @@
 #include <string.h>
 #include <stdarg.h>
 #include <math.h>
+#include <dirent.h>
+#include <sys/stat.h>
+#include <limits.h>
 
 // NOTE(vanya): Helper types
 typedef uint8_t bool;
@@ -24,6 +27,7 @@ typedef double f64;
 
 // NOTE(vanya): Memory functions
 #define P_memset(dest, fill_byte, size) memset(dest, fill_byte, size)
+#define P_memcpy(dest, src, size) memcpy(dest, src, size)
 #define P_malloc(size) malloc(size)
 #define P_calloc(num, size) calloc(num, size)
 #define P_realloc(old_ptr, size) realloc(old_ptr, size)
@@ -31,9 +35,14 @@ typedef double f64;
 
 //NOTE(vanya): String functions 
 #define P_strlen(str) strlen(str)
+
+#define P_strcmp(str_a, str_b) strcmp(str_a, str_b)
 #define P_strncmp(str_a, str_b, size) strncmp(str_a, str_b, size)
+
 #define P_strdup(str) strdup(str)
-#define P_vsnprintf(buffer, size, format, vargs) vsnprintf(buffer, size, format, vargs)
+
+#define P_snprintf(buffer, size, format, ...) snprintf(buffer, size, format, __VA_ARGS__)
+#define P_vsnprintf(buffer, size, format, ...) vsnprintf(buffer, size, format, __VA_ARGS__)
 
 // NOTE(vanya): Debugging macros
 #define P_assert(exp, msg) \
@@ -54,6 +63,11 @@ typedef double f64;
     fprintf(stderr, "critical: %s:%d %s - " format_string "\n", __FILENAME__, __LINE__, __func__, ##__VA_ARGS__)
 
 // NOTE(vanya): File IO functions
+#define P_MAX_PATH_LENGTH PATH_MAX
+#define P_SEEK_SET SEEK_SET
+#define P_SEEK_CUR SEEK_CUR
+#define P_SEEK_END SEEK_END
+
 #define P_fopen(path, mode) fopen(path, mode)
 #define P_fclose(io) fclose(io)
 #define P_fflush(io) fflush(io)
@@ -69,9 +83,10 @@ typedef double f64;
 #define P_frewind(io) frewind(io)
 
 #define P_ferror(io) ferror(io)
-#define P_f_print_error() perror("OS error")
 #define P_fremove(path) remove(path)
 #define P_frename(path_old, path_new) rename(path_old, path_new)
+
+#define P_print_os_error(prefix) perror(prefix)
 
 // NOTE(vanya): Math helper functions
 #define P_round_i32(f) (i32)round(f)
@@ -107,7 +122,38 @@ P_TEMPLATE_MIN_MAX_CLAMP(f64)
 P_TEMPLATE_MIN_MAX_CLAMP(f32)
 
 // NOTE(vanya): File IO functions - Extras
-void P_walk_dir()
+void P_walk_dir(const char* path)
 {
-    // TODO
+    DIR *dir = opendir(path);
+    if (!dir) {
+        P_print_os_error(path);
+        return;
+    }
+
+    struct dirent *entry;
+    while ((entry = readdir(dir)) != NULL) {
+        if (
+                P_strcmp(entry->d_name, ".") == 0
+                || P_strcmp(entry->d_name, "..") == 0
+        ) {
+            continue;
+        }
+
+        char full_path[P_MAX_PATH_LENGTH];
+        P_snprintf(full_path, sizeof(full_path), "%s/%s", path, entry->d_name);
+        
+        struct stat st;
+        if (lstat(full_path, &st) == -1) {
+            P_print_os_error(full_path);
+            continue;
+        }
+
+        if (S_ISDIR(st.st_mode)) {
+            LOG_INFO("DIR : %s", full_path);
+            P_walk_dir(full_path);
+        }
+        if (S_ISREG(st.st_mode)) {
+            LOG_INFO("FILE: %s", full_path);
+        }
+    }
 }

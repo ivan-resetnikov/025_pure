@@ -18,14 +18,12 @@ bool str_wildcard_match(char* str, char* pattern);
 
 char* bytes_to_human_readable(size_t bytes)
 {
-    P_assert(bytes >= 0, "Bytes must be above or equal 0!");
-
     const char* units[] = {"B", "KB", "MB", "GB", "TB", "PB"};
     i32 units_count = sizeof(units) / sizeof(char*);
 
     size_t count = (size_t)bytes;
-    int i = 0;
-    while (count >= 1024.0 && i < units_count) {
+    i32 i = 0;
+    while (count >= 1024.0 && i < units_count - 1) {
         count /= 1024.0;
         i++;
     }

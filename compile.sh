@@ -40,7 +40,7 @@ build_linux_x86_64() {
     echo "${pack_command}"
 
     # TODO: Need to port the packer to Windows and Linux
-    # ${pack_command}
+    ${pack_command}
 }
 
 build_windows_x86_64() {
@@ -83,18 +83,27 @@ build_windows_x86_64() {
     echo "${pack_command}"
 
     # TODO: Need to port the packer to Windows and Linux
-    # ${pack_command}
+    ${pack_command}
 }
 
 if [[ "$1" == "linux_x86_64" ]]; then
     build_linux_x86_64
-    goto end
+    exit 1
 fi
 if [[ "$1" == "windows_x86_64" ]]; then
     build_windows_x86_64
-    goto end
+    exit 1
 fi
 
-build_windows_x86_64
+echo "No valid platform target specified!"
+echo "Automatically detecting platform target (To run on current OS)"
 
-:end
+if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+    build_linux_x86_64
+    exit 1
+fi
+if [[ "$OSTYPE" == "win32"* ]]; then
+    build_windows_x86_64
+    exit 1
+fi
+
