@@ -88,11 +88,11 @@ build_windows_x86_64() {
 
 if [[ "$1" == "linux_x86_64" ]]; then
     build_linux_x86_64
-    exit 1
+    exit 0
 fi
 if [[ "$1" == "windows_x86_64" ]]; then
     build_windows_x86_64
-    exit 1
+    exit 0
 fi
 
 echo "No valid platform target specified!"
@@ -100,10 +100,10 @@ echo "Automatically detecting platform target (To run on current OS)"
 
 if [[ "$OSTYPE" == "linux-gnu"* ]]; then
     build_linux_x86_64
-    exit 1
+    exit 0
 fi
-if [[ "$OSTYPE" == "win32"* ]]; then
+if [[ "$OSTYPE" == "msys" ]]; then
     build_windows_x86_64
-    exit 1
+    exit 0
 fi
 

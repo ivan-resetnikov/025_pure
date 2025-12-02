@@ -6,6 +6,7 @@
 #include <stdarg.h>
 #include <math.h>
 #include <windows.h>
+#include <limits.h>
 
 // NOTE(vanya): Helper types
 typedef uint8_t bool;
@@ -25,6 +26,7 @@ typedef double f64;
 
 // NOTE(vanya): Memory functions
 #define P_memset(dest, fill_byte, size) memset(dest, fill_byte, size)
+#define P_memcpy(dest, src, size) memcpy(dest, src, size)
 #define P_malloc(size) malloc(size)
 #define P_calloc(num, size) calloc(num, size)
 #define P_realloc(old_ptr, size) realloc(old_ptr, size)
@@ -32,9 +34,14 @@ typedef double f64;
 
 //NOTE(vanya): String functions 
 #define P_strlen(str) strlen(str)
+
+#define P_strcmp(str_a, str_b) strcmp(str_a, str_b)
 #define P_strncmp(str_a, str_b, size) strncmp(str_a, str_b, size)
+
 #define P_strdup(str) strdup(str)
-#define P_vsnprintf(buffer, size, format, vargs) vsnprintf(buffer, size, format, vargs)
+
+#define P_snprintf(buffer, size, format, ...) snprintf(buffer, size, format, __VA_ARGS__)
+#define P_vsnprintf(buffer, size, format, ...) vsnprintf(buffer, size, format, __VA_ARGS__)
 
 // NOTE(vanya): Debugging macros
 #define P_assert(exp, msg) \
@@ -55,7 +62,10 @@ typedef double f64;
     fprintf(stderr, "critical: %s:%d %s - " format_string "\n", __FILENAME__, __LINE__, __func__, ##__VA_ARGS__)
 
 // NOTE(vanya): File IO functions
-#define P_MAX_PATH_LEN 512
+#define P_MAX_PATH_LENGTH 256
+#define P_SEEK_SET SEEK_SET
+#define P_SEEK_CUR SEEK_CUR
+#define P_SEEK_END SEEK_END
 
 #define P_fopen(path, mode) fopen(path, mode)
 #define P_fclose(io) fclose(io)
@@ -72,9 +82,10 @@ typedef double f64;
 #define P_frewind(io) frewind(io)
 
 #define P_ferror(io) ferror(io)
-#define P_f_print_error() perror("OS error")
 #define P_fremove(path) remove(path)
 #define P_frename(path_old, path_new) rename(path_old, path_new)
+
+#define P_print_os_error(prefix) perror(prefix)
 
 // NOTE(vanya): Math helper functions
 #define P_round_i32(f) (i32)round(f)
@@ -110,42 +121,54 @@ P_TEMPLATE_MIN_MAX_CLAMP(f64)
 P_TEMPLATE_MIN_MAX_CLAMP(f32)
 
 // NOTE(vanya): File IO functions - Extras
-void walk_dir()
+void P_walk_dir(const char* path, char*** dest_files, int* dest_count)
 {
-    WIN32_FIND_DATA findFileData;
-    HANDLE hFind;
+    WIN32_FIND_DATA found_file_data;
+    HANDLE h_find;
 
-    char searchPath[P_];
-    snprintf(searchPath, P_MAX_PATH_LEN, "%s\\*", dirPath); // search for all files
+    char search_path[P_MAX_PATH_LENGTH];
+    snprintf(search_path, P_MAX_PATH_LENGTH, "%s\\*", path); // search for all files
 
-    hFind = FindFirstFile(searchPath, &findFileData);
-    if (hFind == INVALID_HANDLE_VALUE) {
-        printf("Failed to open directory: %s\n", dirPath);
+    h_find = FindFirstFile(search_path, &found_file_data);
+    if (h_find == INVALID_HANDLE_VALUE) {
+        printf("Failed to open directory: %s\n", path);
         return;
     }
 
     do {
-        const char *name = findFileData.cFileName;
+        const char *name = found_file_data.cFileName;
 
-        // Skip "." and ".."
         if (
-            strcmp(name, ".") != 0
-            strcmp(name, "..") != 0
+                P_strcmp(name, ".") == 0
+                || P_strcmp(name, "..") == 0
         )
             continue;
 
-        char fullPath[P_MAX_PATH_LEN];
-        snprintf(fullPath, P_MAX_PATH_LEN, "%s/%s", dirPath, name);
+        char full_path[P_MAX_PATH_LENGTH];
+        snprintf(full_path, sizeof(full_path), "%s/%s", path, name);
 
-        if (findFileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
-            printf("[DIR]  %s\n", fullPath);
+        if (found_file_data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
+            printf("[DIR]  %s\n", full_path);
+            
             // Recursively walk subdirectory
-            WalkDirectory(fullPath);
+            P_walk_dir(full_path, dest_files, dest_count);
         } else {
-            printf("[FILE] %s\n", fullPath);
-        }
-    } while (FindNextFile(hFind, &findFileData) != 0);
+            printf("[FILE] %s\n", full_path);
 
-    FindClose(hFind);
+            // Add file
+            char** files_tmp = P_realloc(*dest_files, (*dest_count + 1) * sizeof(char*));
+            if (!files_tmp) {
+                LOG_ERROR("Could not allocate enough space for files list");
+            };
+            *dest_files = files_tmp;
+
+            (*dest_files)[*dest_count] = P_malloc(strlen(full_path) + 1);
+            strcpy((*dest_files)[*dest_count], full_path);
+
+            (*dest_count)++;
+        }
+    } while (FindNextFile(h_find, &found_file_data) != 0);
+
+    FindClose(h_find);
 }
 

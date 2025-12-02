@@ -56,7 +56,7 @@ int main(int args_count, char* args[])
 
     // Scan
     LOG_INFO("Scanning input directory");
-    P_walk_dir(in_path);
+    scan_dir(in_path);
 
     // Create output file file
     LOG_INFO("Creating output file");
@@ -197,7 +197,15 @@ int main(int args_count, char* args[])
 
 void scan_dir(char* path)
 {
-    P_walk_dir(path);
+    char** all_files;
+    int all_files_count;
+    P_walk_dir(path, &all_files, &all_files_count);
+
+    for (int i = 0; i < all_files_count; i++) {
+        LOG_DEBUG("%s", all_files[i]);
+    }
+
+    // TODO(vanya): Exclude files here
 }
 
 
