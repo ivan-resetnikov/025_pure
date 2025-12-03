@@ -152,20 +152,20 @@ int main(int args_count, char* args[])
 
         FILE* file_io = P_fopen(file_entry->path, "r");
         if (!file_io) {
-            LOG_ERROR("Failed to open file: %s, skipping! SDL error:\n%s", file_entry->path, "TODO_ERROR");
+            LOG_ERROR("Failed to open file: %s, skipping!", file_entry->path);
             continue;
         }
 
         void* file_buffer = P_malloc(file_entry->file_size);
         if (!file_buffer) {
-            LOG_ERROR("Failed to allocate file buffer: %s, skipping! SDL error:\n%s", file_entry->path, "TODO_ERROR");
+            LOG_ERROR("Failed to allocate file buffer: %s, skipping!", file_entry->path);
             P_fclose(file_io);
             continue;
         }
 
         size_t read_bytes = P_fread(file_io, file_buffer, file_entry->file_size);
         if (read_bytes < file_entry->file_size) {
-            LOG_ERROR("Failed to read the input file fully! Written: %zu/%zu bytes. SDL error:\n%s", read_bytes, file_entry->file_size, "TODO_ERROR");
+            LOG_ERROR("Failed to read the input file fully! Written: %zu/%zu bytes.", read_bytes);
             P_free(file_buffer);
             P_fclose(file_io);
             continue;
@@ -173,7 +173,7 @@ int main(int args_count, char* args[])
 
         size_t written_bytes = P_fwrite(out_file, file_buffer, file_entry->file_size);
         if (written_bytes < file_entry->file_size) {
-            LOG_ERROR("Failed to fully write the input file into the output file! Written: %zu/%zu bytes. SDL error:\n%s", written_bytes, file_entry->file_size, "TODO_ERROR");
+            LOG_ERROR("Failed to fully write the input file into the output file! Written: %zu/%zu bytes.", written_bytes);
             P_free(file_buffer);
             P_fclose(file_io);
             continue;
@@ -187,8 +187,6 @@ int main(int args_count, char* args[])
 
     P_fclose(out_file);
 
-    LOG_DEBUG("asdasd");
-    LOG_DEBUG("%d", out_file_size);
     LOG_INFO("%s created successfully! Final size: %s", out_path, bytes_to_human_readable(out_file_size));
 
     return 0;
@@ -197,64 +195,46 @@ int main(int args_count, char* args[])
 
 void scan_dir(char* path)
 {
-    char** all_files;
-    int all_files_count;
+    char** all_files = NULL;
+    int all_files_count = 0;
     P_walk_dir(path, &all_files, &all_files_count);
 
     for (int i = 0; i < all_files_count; i++) {
-        LOG_DEBUG("%s", all_files[i]);
+        char* candidate_files_path = all_files[i];
+
+        // NOTE(vanya): Compare against exclusion patterns
+        bool was_excluded = false;
+
+        for (int i = 0; i < exclusion_patterns_count; i++) {
+            char* pattern = exclusion_patterns[i];
+
+            if (str_wildcard_match(candidate_files_path, pattern)) {
+                was_excluded = true;
+                LOG_DEBUG("Excluding %s, matched exclusion pattern: %s", candidate_files_path, pattern);
+                break;
+            }
+        }
+
+        if (!was_excluded) {
+            LOG_DEBUG("Packing %s", candidate_files_path);
+            
+            size_t new_size = sizeof(char*) * (in_files_count + 1);
+            in_files_paths = P_realloc(in_files_paths, new_size);
+
+            in_files_paths[in_files_count] = P_strdup(candidate_files_path);
+
+            in_files_count++;
+        }
     }
-
-    // TODO(vanya): Exclude files here
 }
-
-
-// P_EnumerationResult list_dir(void *userdata, const char *dir_name, const char *file_name) {
-//     char full_path[MAX_PATH_LENGTH];
-//     P_snprintf(full_path, MAX_PATH_LENGTH, "%s%s", dir_name, file_name);
-// 
-//     P_PathInfo info;
-//     if (P_GetPathInfo(full_path, &info)) {
-//         if (info.type == P_PATHTYPE_DIRECTORY) {
-//             scan_dir(full_path);
-//         }
-//         else if (info.type == P_PATHTYPE_FILE) {
-//             // Check if excluded
-//             bool excluded = false;
-// 
-//             for (int i = 0; i < exclusion_patterns_count; i++) {
-//                 char* pattern = exclusion_patterns[i];
-// 
-//                 if (str_wildcard_match(full_path, pattern)) {
-//                     excluded = true;
-//                     LOG_DEBUG("Excluding %s, matched exclusion pattern: %s", full_path, pattern);
-//                     break;
-//                 }
-//             }
-// 
-//             if (!excluded) {
-//                 size_t new_size = sizeof(char*) * (in_files_count + 1);
-//                 in_files_paths = P_realloc(in_files_paths, new_size);
-//                 
-//                 in_files_paths[in_files_count] = P_strdup(full_path);
-// 
-//                 in_files_count++;
-//             }
-//         }
-//         
-//     } else {
-//         LOG_ERROR("Failed to get path info for: %s! SDL error:\n%s", full_path, "TODO_ERROR");
-//     }
-// 
-//     return P_ENUM_CONTINUE;
-// }
 
 
 size_t get_file_size(char* path)
 {
     FILE* f = P_fopen(path, "r");
     if (!f) {
-        LOG_ERROR("Failed to open file: %s! SDL error:\n%s", path, "TODO_ERROR");
+        LOG_ERROR("Failed to open file: %s!", path);
+        P_print_os_error();
         return 0;
     }
 
@@ -266,3 +246,4 @@ size_t get_file_size(char* path)
 
     return file_size;
 }
+

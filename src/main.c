@@ -43,13 +43,6 @@ void P_ready()
     tm.tile_width = 3;
     tm.tile_height = 3;
     tm.tiles = P_malloc(sizeof(Tile) * tm.width * tm.height);
-}
-
-void P_iterate()
-{
-    tick++;
-
-    P_clear_backbuffer(0, 0, 0);
 
     // Test -> Randomise times
     for (int x = 0; x < tm.width; x++) {
@@ -60,6 +53,13 @@ void P_iterate()
             tile->image = rand() % 2 ? &img_diorite : NULL;
         }
     }
+}
+
+void P_iterate()
+{
+    tick++;
+
+    P_clear_backbuffer(0, 0, 0);
 
     draw_tilemap(&tm);
 }

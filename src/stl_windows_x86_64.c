@@ -127,7 +127,7 @@ void P_walk_dir(const char* path, char*** dest_files, int* dest_count)
     HANDLE h_find;
 
     char search_path[P_MAX_PATH_LENGTH];
-    snprintf(search_path, P_MAX_PATH_LENGTH, "%s\\*", path); // search for all files
+    snprintf(search_path, P_MAX_PATH_LENGTH, "%s\\*", path);
 
     h_find = FindFirstFile(search_path, &found_file_data);
     if (h_find == INVALID_HANDLE_VALUE) {
@@ -141,24 +141,21 @@ void P_walk_dir(const char* path, char*** dest_files, int* dest_count)
         if (
                 P_strcmp(name, ".") == 0
                 || P_strcmp(name, "..") == 0
-        )
+        ) {
             continue;
+        }
 
         char full_path[P_MAX_PATH_LENGTH];
         snprintf(full_path, sizeof(full_path), "%s/%s", path, name);
 
         if (found_file_data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
-            printf("[DIR]  %s\n", full_path);
-            
-            // Recursively walk subdirectory
+            // NOTE(vanya): Walk subdirectory
             P_walk_dir(full_path, dest_files, dest_count);
         } else {
-            printf("[FILE] %s\n", full_path);
-
-            // Add file
+            // NOTE(vanya): Add file
             char** files_tmp = P_realloc(*dest_files, (*dest_count + 1) * sizeof(char*));
             if (!files_tmp) {
-                LOG_ERROR("Could not allocate enough space for files list");
+                LOG_ERROR("Could not allocate enough space for the files list");
             };
             *dest_files = files_tmp;
 

@@ -122,7 +122,7 @@ P_TEMPLATE_MIN_MAX_CLAMP(f64)
 P_TEMPLATE_MIN_MAX_CLAMP(f32)
 
 // NOTE(vanya): File IO functions - Extras
-void P_walk_dir(const char* path)
+void P_walk_dir(const char* path, char*** dest_files, int* dest_count)
 {
     DIR *dir = opendir(path);
     if (!dir) {
@@ -149,11 +149,21 @@ void P_walk_dir(const char* path)
         }
 
         if (S_ISDIR(st.st_mode)) {
-            LOG_INFO("DIR : %s", full_path);
-            P_walk_dir(full_path);
+            P_walk_dir(full_path, dest_files, dest_count);
         }
         if (S_ISREG(st.st_mode)) {
-            LOG_INFO("FILE: %s", full_path);
+	        // Add file
+            char** files_tmp = P_realloc(*dest_files, (*dest_count + 1) * sizeof(char*));
+            if (!files_tmp) {
+                LOG_ERROR("Could not allocate enough space for the files list");
+            };
+            *dest_files = files_tmp;
+
+            (*dest_files)[*dest_count] = P_malloc(strlen(full_path) + 1);
+            strcpy((*dest_files)[*dest_count], full_path);
+
+            (*dest_count)++;
+
         }
     }
 }
