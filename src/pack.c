@@ -234,7 +234,7 @@ size_t get_file_size(char* path)
     FILE* f = P_fopen(path, "r");
     if (!f) {
         LOG_ERROR("Failed to open file: %s!", path);
-        P_print_os_error();
+        P_print_os_error("OS error");
         return 0;
     }
 

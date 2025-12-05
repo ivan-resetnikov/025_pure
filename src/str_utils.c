@@ -68,10 +68,13 @@ char* str_override(char* dest, char* str)
 
 char* str_new_formatted(const char* fmt, ...) {
     va_list args;
+    va_list args_copy;
 
     va_start(args, fmt);
-    int str_len = P_vsnprintf(NULL, 0, fmt, args) + 1;
-    va_end(args);
+    
+    va_copy(args_copy, args);
+    int str_len = P_vsnprintf(NULL, 0, fmt, args_copy) + 1;
+    va_end(args_copy);
 
     char* str = (char*)P_calloc(1, str_len);
     if (!str) {
@@ -79,7 +82,6 @@ char* str_new_formatted(const char* fmt, ...) {
         return NULL;
     }
 
-    va_start(args, fmt);
     P_vsnprintf(str, str_len, fmt, args);
     va_end(args);
 

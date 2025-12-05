@@ -5,6 +5,7 @@ build_windows_x86_64() {
 
     # Compiler flags
     compiler_flags=""
+    compiler_flags="${compiler_flags} -g"
     compiler_flags="${compiler_flags} -DP_WINDOWS_X86_64"
     compiler_flags="${compiler_flags} -D_CRT_SECURE_NO_WARNINGS"
 
