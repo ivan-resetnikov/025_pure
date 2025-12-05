@@ -28,20 +28,20 @@ Image img_diorite;
 Tilemap tm;
 
 
-void load_bmp(Image* image);
+void load_img(Image* image, const char* path);
 void draw_tilemap(Tilemap* tilemap);
 void blit_image_to_frame_simple(Image* image, int offset_x, int offset_y, float scale);
 
 
 void P_ready()
 {
-    load_bmp(&img_diorite);
+    load_img(&img_diorite, "/home/ivan/dev/c++/025_rpg/assets/textures/tiles/diorite.img");
 
     // Test tilemap
-    tm.width = 32;
-    tm.height = 32;
-    tm.tile_width = 3;
-    tm.tile_height = 3;
+    tm.width = 16;
+    tm.height = 16;
+    tm.tile_width = 8;
+    tm.tile_height = 8;
     tm.tiles = P_malloc(sizeof(Tile) * tm.width * tm.height);
 
     // Test -> Randomise times
@@ -64,18 +64,25 @@ void P_iterate()
     draw_tilemap(&tm);
 }
 
-void load_bmp(Image* image)
+void load_img(Image* image, const char* path)
 {
-    // Test image
-    static u32 image_data[] = {
-        0xFFFF0000, 0xFF0000FF, 0xFF00FF00,
-        0xFF00FF00, 0xFFFF0000, 0xFF0000FF,
-        0xFF0000FF, 0xFF00FFFF, 0xFFFF0000,
-    };
+    // TODO(vanya): This code is terrible
+    // and we should read from the file DB
+    // NOT directly from the platform!
+    //
+    // Rework!
 
-    image->width = 3;
-    image->height = 3;
-    image->data = image_data;
+    FILE* f = P_fopen(path, "rb");
+    P_assert(f != NULL, "null file");
+    P_fread(f, &image->width, sizeof(i32));
+    LOG_DEBUG("%d", image->width);
+    P_fread(f, &image->height, sizeof(i32));
+    LOG_DEBUG("%d", image->height);
+
+    size_t data_size = sizeof(u32) * image->width * image->height;
+    image->data = malloc(data_size);
+    P_fread(f, image->data, data_size);
+    P_fclose(f);
 }
 
 void draw_tilemap(Tilemap* tilemap)

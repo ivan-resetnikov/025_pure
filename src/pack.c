@@ -291,12 +291,86 @@ size_t get_file_size(char* path)
 
 void convert_bmp_to_image_and_create_neighbour_file(const char* path)
 {
+    LOG_DEBUG("Converting .BMP to .IMG: %s", path);
+
+    // Read BMP
+    FILE* file_in = P_fopen(path, "rb");
+
+    u16 magic_number;
+    P_fread(file_in, &magic_number, sizeof(magic_number));
+    if (magic_number != 0x4D42) { // BM
+        LOG_ERROR("Did not find magic number in header!");
+        P_fclose(file_in);
+        return;
+    }
+
+    // Data offset
+    P_fseek(file_in, 12, P_SEEK_CUR);
+    u32 data_offset;
+    P_fread(file_in, &data_offset, sizeof(data_offset));
+
+    // Dimensions
+    i32 width, height;
+    P_fread(file_in, &width, sizeof(i32));
+    P_fread(file_in, &height, sizeof(i32));
+
+    // Planes? and Bits Per Pixel
+    u16 planes, bpp;
+    P_fread(file_in, &planes, sizeof(planes));
+    P_fread(file_in, &bpp, sizeof(bpp));
+
+    // Only support 24-bit or 32-bit BMP
+    if (bpp != 24 && bpp != 32) {
+        LOG_ERROR("Only support 24-bit or 32-bit BMP");
+        P_fclose(file_in);
+        return;
+    }
+
+    P_fseek(file_in, data_offset, P_SEEK_SET);
+
+    size_t data_size = sizeof(u32) * width * height;
+    u32* data = P_malloc(data_size);
+
+    size_t row_padded = ((bpp * width + 31) / 32) * 4;
+    u8* row = P_malloc(row_padded);
+
+    for (int y = 0; y < height; ++y) {
+        P_fread(file_in, row, row_padded);
+
+        for (int x = 0; x < width; ++x) {
+            u8 r, g, b, a = 255;
+
+            if (bpp == 24) {
+                r = row[x * 3 + 0];
+                g = row[x * 3 + 1];
+                b = row[x * 3 + 2];
+            } else
+            if (bpp == 32) {
+                r = row[x * 4 + 0];
+                g = row[x * 4 + 1];
+                b = row[x * 4 + 2];
+                a = row[x * 4 + 3];
+            }
+
+            data[y * width + x] = (a << 24) | (b << 16) | (g << 8) | r;
+        }
+    }
+
+    P_fclose(file_in);
+
+    // Write output file
     char* base = str_sub(path, 0, str_rfind(path, '.') - 1);
     char* new_path = str_new_formatted("%s.img", base);
 
-    FILE* file_out = P_fopen(new_path, "w");
+    FILE* file_out = P_fopen(new_path, "wb");
+    if (file_out == NULL) {
+        LOG_ERROR("Failed to open output file!");
+        return;
+    }
 
-    P_fwrite(file_out, "hello!", 6);
+    P_fwrite(file_out, &width, sizeof(i32));
+    P_fwrite(file_out, &height, sizeof(i32));
+    P_fwrite(file_out, data, data_size);
 
     P_fclose(file_out);
 }
