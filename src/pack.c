@@ -153,6 +153,7 @@ int main(int args_count, char* args[])
         FILE* file_io = P_fopen(file_entry->path, "r");
         if (!file_io) {
             LOG_ERROR("Failed to open file: %s, skipping!", file_entry->path);
+            P_print_os_error("OS error");
             continue;
         }
 
@@ -165,7 +166,7 @@ int main(int args_count, char* args[])
 
         size_t read_bytes = P_fread(file_io, file_buffer, file_entry->file_size);
         if (read_bytes < file_entry->file_size) {
-            LOG_ERROR("Failed to read the input file fully! Written: %zu/%zu bytes.", read_bytes);
+            LOG_ERROR("Failed to read the input file fully! Written: %zu/%zu bytes.", read_bytes, file_entry->file_size);
             P_free(file_buffer);
             P_fclose(file_io);
             continue;
@@ -173,7 +174,7 @@ int main(int args_count, char* args[])
 
         size_t written_bytes = P_fwrite(out_file, file_buffer, file_entry->file_size);
         if (written_bytes < file_entry->file_size) {
-            LOG_ERROR("Failed to fully write the input file into the output file! Written: %zu/%zu bytes.", written_bytes);
+            LOG_ERROR("Failed to fully write the input file into the output file! Written: %zu/%zu bytes.", written_bytes, file_entry->file_size);
             P_free(file_buffer);
             P_fclose(file_io);
             continue;

@@ -27,8 +27,8 @@ char* bytes_to_human_readable(size_t bytes)
         count /= 1024.0;
         i++;
     }
-
-    return str_new_formatted("%.2f %s", count, units[i]);
+    
+    return str_new_formatted("%.2f %s", (float)bytes, units[i]);
 }
 
 
@@ -66,26 +66,30 @@ char* str_override(char* dest, char* str)
 }
 
 
-char* str_new_formatted(const char* fmt, ...) {
+char *str_new_formatted(const char *fmt, ...) {
     va_list args;
-    va_list args_copy;
-
     va_start(args, fmt);
-    
+
+    va_list args_copy;
     va_copy(args_copy, args);
-    int str_len = P_vsnprintf(NULL, 0, fmt, args_copy) + 1;
+    int str_len = P_vsnprintf(NULL, 0, fmt, args_copy);
     va_end(args_copy);
 
-    char* str = (char*)P_calloc(1, str_len);
-    if (!str) {
-        LOG_ERROR("Failed to allocate enough memory for the new string.");
+    if (str_len < 0) {
+        va_end(args);
         return NULL;
     }
 
-    P_vsnprintf(str, str_len, fmt, args);
+    char *buffer = P_malloc((str_len) * sizeof(char));
+    if (!buffer) {
+        va_end(args);
+        return NULL;
+    }
+
+    P_vsnprintf(buffer, str_len + 1, fmt, args);
     va_end(args);
 
-    return str;
+    return buffer;
 }
 
 

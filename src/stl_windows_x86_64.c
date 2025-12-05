@@ -71,8 +71,8 @@ typedef double f64;
 #define P_fclose(io) fclose(io)
 #define P_fflush(io) fflush(io)
 
-#define P_fread(io, buf , size) fread(buf, size, 1, io)
-#define P_fwrite(io, buf, size) fwrite(buf, size, 1, io)
+#define P_fread(io, buf , size) fread(buf, size, 1, io) * size
+#define P_fwrite(io, buf, size) fwrite(buf, size, 1, io) * size
 
 #define P_fgetc(io) fgetc(io)
 #define P_fputc(io, c) fputc(c, io)
