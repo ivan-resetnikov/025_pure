@@ -93,6 +93,65 @@ char *str_new_formatted(const char *fmt, ...) {
 }
 
 
+char* str_sub(const char* str, int start, int end) {
+    int str_len = P_strlen(str);
+
+    // NOTE(vanya): Convert negative indices to real indices
+    if (end < 0) {
+        P_assert(P_abs_i32(end) < str_len, "Negative end index escaped the string length!");
+        end = str_len + end;
+    }
+    if (start < 0) {
+        P_assert(P_abs_i32(start) < str_len, "Negative end index escaped the string length!");
+        start = str_len + start;
+    }
+
+    P_assert(start <= str_len, "Start beyond string length!");
+    P_assert(end <= str_len, "End beyond string length!");
+    P_assert(start < end, "Start beyond end!");
+
+    int len = end - start + 1;
+
+    char* result = malloc(len + 1); // NOTE(vanya): +1 for null terminator
+    if (!result) {
+        LOG_ERROR("Failed to allocate substring!");
+        return NULL;
+    }
+
+    strncpy(result, str + start, len);
+    result[len] = '\0'; // NOTE(vanya): Null-terminate
+    return result;
+}
+
+
+int str_lfind(const char *str, char ch)
+{
+    P_assert(str != NULL, "String is NULL!");
+
+    for (int i = 0; str[i] != '\0'; i++) {
+        if (str[i] == ch) {
+            return i;
+        }
+    }
+
+    return -1;
+}
+
+
+int str_rfind(const char *str, char ch)
+{
+    P_assert(str != NULL, "String is NULL!");
+
+    for (int i = P_strlen(str) - 1; i > 0; i--) {
+        if (str[i] == ch) {
+            return i;
+        }
+    }
+
+    return -1;
+}
+
+
 bool str_wildcard_match(char* str, char* pattern)
 {
 #ifdef __linux__

@@ -1,23 +1,18 @@
 #include "str_utils.c"
 
-#define MAX_PATH_LENGTH P_MAX_PATH_LENGTH
+/*
+** Structs
+*/
 
 typedef struct {
     int path_size;
-    char path[MAX_PATH_LENGTH];
+    char path[P_MAX_PATH_LENGTH];
     size_t file_offset;
     size_t file_size;
 } FileEntry;
 
 /*
-** Declarations
-*/
-
-void scan_dir(char* path);
-size_t get_file_size(char* path);
-
-/*
-** Implementation
+** Variables
 */
 
 char** in_files_paths = NULL;
@@ -25,12 +20,36 @@ int in_files_count = 0;
 char** exclusion_patterns = NULL;
 int exclusion_patterns_count = 0;
 
+/*
+** Declarations
+*/
+
+void scan_dir(char* path);
+void convert_assets();
+size_t get_file_size(char* path);
+
+void convert_bmp_to_image_and_create_neighbour_file(const char* path);
+
+/*
+** Implementation
+*/
+
 int main(int args_count, char* args[])
 {
-    // Parse args
-    char* in_path = P_strdup("assets");
+    // Defaults
+    char* in_path = P_strdup("./assets/");
     char* out_path = P_strdup("assets.bin");
 
+    // NOTE(vanya): Inject default exceptions for output files from the app itself
+    // The asset convertion pipeline - the one that turns assets out of an art program
+    // into the engine-readable format, outputs converted files for each asset.
+    // We don't want them back in the pipeline.
+    size_t new_size = sizeof(char*) * (exclusion_patterns_count + 1);
+    exclusion_patterns = P_realloc(exclusion_patterns, new_size);
+
+    exclusion_patterns[exclusion_patterns_count++] = P_strdup("*.img");
+
+    // Parse args
     for (int arg_index = 1; arg_index < args_count; arg_index++) {
         char* arg = args[arg_index];
 
@@ -55,8 +74,9 @@ int main(int args_count, char* args[])
     LOG_INFO("Excluded files: %d", exclusion_patterns_count);
 
     // Scan
-    LOG_INFO("Scanning input directory");
     scan_dir(in_path);
+
+    convert_assets();
 
     // Create output file file
     LOG_INFO("Creating output file");
@@ -93,7 +113,7 @@ int main(int args_count, char* args[])
 
         // Path
         f->path_size = P_strlen(file_path) + 1;
-        P_memset(f->path, 0, MAX_PATH_LENGTH);
+        P_memset(f->path, 0, P_MAX_PATH_LENGTH);
         P_memcpy(f->path, file_path, f->path_size + 1);
 
         // File size
@@ -196,6 +216,8 @@ int main(int args_count, char* args[])
 
 void scan_dir(char* path)
 {
+    LOG_INFO("Scanning input directory");
+    
     char** all_files = NULL;
     int all_files_count = 0;
     P_walk_dir(path, &all_files, &all_files_count);
@@ -230,6 +252,24 @@ void scan_dir(char* path)
 }
 
 
+void convert_assets()
+{
+    LOG_INFO("Converting assets");
+    
+    for (int i = 0; i < in_files_count; i++) {
+        char* in_file_path = in_files_paths[i];
+        char* extension = str_sub(in_file_path, str_rfind(in_file_path, '.'), -1);
+ 
+        if (P_strcmp(extension, ".bmp") == 0) {
+            LOG_DEBUG("New image file from %s", in_file_path);
+            convert_bmp_to_image_and_create_neighbour_file(in_file_path);
+        } else {
+            LOG_DEBUG("Unhandled extension in: %s", in_file_path);
+        }
+    }
+}
+
+
 size_t get_file_size(char* path)
 {
     FILE* f = P_fopen(path, "r");
@@ -246,5 +286,18 @@ size_t get_file_size(char* path)
     P_fclose(f);
 
     return file_size;
+}
+
+
+void convert_bmp_to_image_and_create_neighbour_file(const char* path)
+{
+    char* base = str_sub(path, 0, str_rfind(path, '.') - 1);
+    char* new_path = str_new_formatted("%s.img", base);
+
+    FILE* file_out = P_fopen(new_path, "w");
+
+    P_fwrite(file_out, "hello!", 6);
+
+    P_fclose(file_out);
 }
 

@@ -89,6 +89,9 @@ typedef double f64;
 #define P_print_os_error(prefix) perror(prefix)
 
 // NOTE(vanya): Math helper functions
+#define P_abs_f32(f) (f32)abs(f)
+#define P_abs_i32(i) (i32)abs(i)
+
 #define P_round_i32(f) (i32)round(f)
 #define P_floor_i32(f) (i32)floor(f)
 #define P_round_f32(f) (f32)round(f)
