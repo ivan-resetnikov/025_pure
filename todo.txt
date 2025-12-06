@@ -12,16 +12,16 @@ done:
 - update windows platform layer
 - port i/o system to own platform layer
 - bmp loading
-
-wip:
 - fix bmp to img conversion & img loading
 
+wip:
+
 todays tasks:
+- player entity
+- walking around
 
 todo:
 - create first level
-- player entity
-- walking around
 - collision
 - character entity
 - interaction
