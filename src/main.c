@@ -24,6 +24,7 @@ typedef struct {
 } Tilemap;
 
 
+Image img_test;
 Image img_diorite;
 Tilemap tm;
 
@@ -35,7 +36,8 @@ void blit_image_to_frame_simple(Image* image, int offset_x, int offset_y, float 
 
 void P_ready()
 {
-    load_img(&img_diorite, "/home/ivan/dev/c++/025_rpg/assets/textures/tiles/diorite.img");
+    load_img(&img_test, "../assets/textures/tiles/test.img");
+    load_img(&img_diorite, "../assets/textures/tiles/diorite.img");
 
     // Test tilemap
     tm.width = 16;
@@ -50,10 +52,21 @@ void P_ready()
             int tile_index = y * tm.width + x;
             Tile* tile = &tm.tiles[tile_index];
 
-            tile->image = rand() % 2 ? &img_diorite : NULL;
+            switch (rand() % 3) {
+            case 0: {
+                tile->image = NULL;
+            } break;
+            case 1: {
+                tile->image = &img_diorite;
+            } break;
+            case 2: {
+                tile->image = &img_test;
+            } break;
+            }
         }
     }
 }
+
 
 void P_iterate()
 {
@@ -63,6 +76,7 @@ void P_iterate()
 
     draw_tilemap(&tm);
 }
+
 
 void load_img(Image* image, const char* path)
 {
@@ -74,16 +88,17 @@ void load_img(Image* image, const char* path)
 
     FILE* f = P_fopen(path, "rb");
     P_assert(f != NULL, "null file");
+
     P_fread(f, &image->width, sizeof(i32));
-    LOG_DEBUG("%d", image->width);
     P_fread(f, &image->height, sizeof(i32));
-    LOG_DEBUG("%d", image->height);
 
     size_t data_size = sizeof(u32) * image->width * image->height;
     image->data = malloc(data_size);
     P_fread(f, image->data, data_size);
+
     P_fclose(f);
 }
+
 
 void draw_tilemap(Tilemap* tilemap)
 {
@@ -102,6 +117,7 @@ void draw_tilemap(Tilemap* tilemap)
         }
     }
 }
+
 
 void blit_image_to_frame_simple(Image* image, int offset_x, int offset_y, float scale)
 {

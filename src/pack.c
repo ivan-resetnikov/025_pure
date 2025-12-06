@@ -291,7 +291,7 @@ size_t get_file_size(char* path)
 
 void convert_bmp_to_image_and_create_neighbour_file(const char* path)
 {
-    LOG_DEBUG("Converting .BMP to .IMG: %s", path);
+    LOG_DEBUG("Treating %s as .bmp - converting to .img", path);
 
     // Read BMP
     FILE* file_in = P_fopen(path, "rb");
@@ -305,31 +305,41 @@ void convert_bmp_to_image_and_create_neighbour_file(const char* path)
     }
 
     // Data offset
-    P_fseek(file_in, 12, P_SEEK_CUR);
+    P_fseek(file_in, 10, P_SEEK_SET);
     u32 data_offset;
     P_fread(file_in, &data_offset, sizeof(data_offset));
 
     // Dimensions
+    P_fseek(file_in, 18, P_SEEK_SET);
     i32 width, height;
     P_fread(file_in, &width, sizeof(i32));
     P_fread(file_in, &height, sizeof(i32));
 
-    // Planes? and Bits Per Pixel
-    u16 planes, bpp;
-    P_fread(file_in, &planes, sizeof(planes));
+    // Bits Per Pixel
+    P_fseek(file_in, 28, P_SEEK_SET);
+    u16 bpp;
     P_fread(file_in, &bpp, sizeof(bpp));
+
+    LOG_DEBUG("Format: %dx%d Bits Per Pixel: %d Data offset: %d", width, height, bpp, data_offset);
 
     // Only support 24-bit or 32-bit BMP
     if (bpp != 24 && bpp != 32) {
-        LOG_ERROR("Only support 24-bit or 32-bit BMP");
+        LOG_ERROR("Converter only supports 24-bit or 32-bit .bmp files!");
         P_fclose(file_in);
         return;
     }
 
+    //
+    LOG_DEBUG("Reading data");
     P_fseek(file_in, data_offset, P_SEEK_SET);
 
     size_t data_size = sizeof(u32) * width * height;
     u32* data = P_malloc(data_size);
+    if (data == NULL) {
+        LOG_ERROR("Failed to allocate buffer for image!");
+        P_fclose(file_in);
+        return;
+    }
 
     size_t row_padded = ((bpp * width + 31) / 32) * 4;
     u8* row = P_malloc(row_padded);
@@ -341,24 +351,26 @@ void convert_bmp_to_image_and_create_neighbour_file(const char* path)
             u8 r, g, b, a = 255;
 
             if (bpp == 24) {
-                r = row[x * 3 + 0];
+                b = row[x * 3 + 0];
                 g = row[x * 3 + 1];
-                b = row[x * 3 + 2];
+                r = row[x * 3 + 2];
             } else
             if (bpp == 32) {
-                r = row[x * 4 + 0];
+                b = row[x * 4 + 0];
                 g = row[x * 4 + 1];
-                b = row[x * 4 + 2];
+                r = row[x * 4 + 2];
                 a = row[x * 4 + 3];
             }
 
-            data[y * width + x] = (a << 24) | (b << 16) | (g << 8) | r;
+            data[(height - 1 - y) * width + x] = (a << 24) | (r << 16) | (g << 8) | b;
         }
     }
 
     P_fclose(file_in);
 
     // Write output file
+    LOG_DEBUG("Writing output file");
+
     char* base = str_sub(path, 0, str_rfind(path, '.') - 1);
     char* new_path = str_new_formatted("%s.img", base);
 

@@ -10,12 +10,13 @@ done:
 - port packer to use new STL layer
 - logging macros
 - update windows platform layer
+- port i/o system to own platform layer
+- bmp loading
 
 wip:
-- port i/o system to own platform layer
+- fix bmp to img conversion & img loading
 
 todays tasks:
-- bmp loading
 
 todo:
 - create first level
