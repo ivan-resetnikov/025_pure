@@ -51,16 +51,36 @@ typedef double f64;
 // NOTE(vanya): Logging macros
 #define __FILENAME__ (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
 
+#define TERM_COL_BLACK_FG "\x1b[0;30m"
+#define TERM_COL_RED_FG "\x1b[0;31m"
+#define TERM_COL_GREEN_FG "\x1b[0;32m"
+#define TERM_COL_YELLOW_FG "\x1b[0;33m"
+#define TERM_COL_BLUE_FG "\x1b[0;34m"
+#define TERM_COL_MAGENTA_FG "\x1b[0;35m"
+#define TERM_COL_CYAN_FG "\x1b[0;36m"
+#define TERM_COL_WHITE_FG "\x1b[0;37m"
+
+#define TERM_COL_BLACK_BG "\x1b[0;40m"
+#define TERM_COL_RED_BG "\x1b[0;41m"
+#define TERM_COL_GREEN_BG "\x1b[0;42m"
+#define TERM_COL_YELLOW_BG "\x1b[0;43m"
+#define TERM_COL_BLUE_BG "\x1b[0;44m"
+#define TERM_COL_MAGENTA_BG "\x1b[0;45m"
+#define TERM_COL_CYAN_BG "\x1b[0;46m"
+#define TERM_COL_WHITE_BG "\x1b[0;47m"
+
+#define TERM_COL_RESET "\x1b[0;39;49m"
+
 #define LOG_DEBUG(format_string, ...) \
     fprintf(stdout, "debug:    %s:%d %s - " format_string "\n", __FILENAME__, __LINE__, __func__, ##__VA_ARGS__)
 #define LOG_INFO(format_string, ...) \
     fprintf(stdout, "info:     %s:%d %s - " format_string "\n", __FILENAME__, __LINE__, __func__, ##__VA_ARGS__)
 #define LOG_WARNING(format_string, ...) \
-    fprintf(stdout, "warning:  %s:%d %s - " format_string "\n", __FILENAME__, __LINE__, __func__, ##__VA_ARGS__)
+    fprintf(stdout, TERM_COL_YELLOW "warning:  %s:%d %s - " format_string TERM_COL_RESET "\n", __FILENAME__, __LINE__, __func__, ##__VA_ARGS__)
 #define LOG_ERROR(format_string, ...) \
-    fprintf(stderr, "error:    %s:%d %s - " format_string "\n", __FILENAME__, __LINE__, __func__, ##__VA_ARGS__)
+    fprintf(stderr, TERM_COL_RED_FG "error:    %s:%d %s - " format_string TERM_COL_RESET "\n", __FILENAME__, __LINE__, __func__, ##__VA_ARGS__)
 #define LOG_CRITICAL(format_string, ...) \
-    fprintf(stderr, "critical: %s:%d %s - " format_string "\n", __FILENAME__, __LINE__, __func__, ##__VA_ARGS__)
+    fprintf(stderr, TERM_COL_WHITE_FG TERM_COL_RED_BG "critical: %s:%d %s - " format_string TERM_COLOR_RESET "\n", __FILENAME__, __LINE__, __func__, ##__VA_ARGS__)
 
 // NOTE(vanya): File IO functions
 #define P_MAX_PATH_LENGTH PATH_MAX
