@@ -62,7 +62,7 @@ typedef double f64;
     fprintf(stderr, "critical: %s:%d %s - " format_string "\n", __FILENAME__, __LINE__, __func__, ##__VA_ARGS__)
 
 // NOTE(vanya): File IO functions
-#define P_MAX_PATH_LENGTH 256
+#define P_MAX_PATH_LENGTH 260 
 #define P_SEEK_SET SEEK_SET
 #define P_SEEK_CUR SEEK_CUR
 #define P_SEEK_END SEEK_END
@@ -88,6 +88,9 @@ typedef double f64;
 #define P_print_os_error(prefix) perror(prefix)
 
 // NOTE(vanya): Math helper functions
+#define P_abs_f32(f) (f32)abs(f)
+#define P_abs_i32(i) (i32)abs(i)
+
 #define P_round_i32(f) (i32)round(f)
 #define P_floor_i32(f) (i32)floor(f)
 #define P_round_f32(f) (f32)round(f)
