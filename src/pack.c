@@ -5,10 +5,10 @@
 */
 
 typedef struct {
-    int path_size;
+    i32 path_size;
     char path[P_MAX_PATH_LENGTH];
-    size_t file_offset;
-    size_t file_size;
+    u32 file_offset;
+    u32 file_size;
 } FileEntry;
 
 /*
@@ -80,17 +80,17 @@ int main(int args_count, char* args[])
 
     // Create output file file
     LOG_INFO("Creating output file");
-    FILE* out_file = P_fopen(out_path, "w");
-    if (!out_file) {
-        LOG_ERROR("Failed to open output file! SDL error:\n%s", "TODO_ERROR");
+    P_IOStream out_file;
+    if (P_IOStream_FromFile(&out_file, out_path, "w") != P_ERROR_OK) {
+        LOG_CRITICAL("Failed to open output file! SDL error:\n%s", "TODO_ERROR");
         return 1;
     }
     
     // Header
     LOG_DEBUG("Writing header");
-    P_fwrite(out_file, &in_files_count, sizeof(int));
+    P_IOStream_Write(&out_file, &in_files_count, sizeof(int), NULL);
     
-    size_t header_size = P_ftell(out_file);
+    size_t header_size = P_ftell(out_file.stream);
     
     // File index
     LOG_DEBUG("Creating file index");
@@ -135,10 +135,10 @@ int main(int args_count, char* args[])
 
         // Index section
         index_section_size += (
-            sizeof(int)
+            sizeof(i32)
             + f->path_size
-            + sizeof(size_t)
-            + sizeof(size_t)
+            + sizeof(u32)
+            + sizeof(u32)
         );
     }
     
@@ -155,12 +155,12 @@ int main(int args_count, char* args[])
         FileEntry* f = &file_entires[i];
         
         // Path
-        P_fwrite(out_file, &f->path_size, sizeof(int));
-        P_fwrite(out_file, f->path, f->path_size);
+        P_IOStream_Write(&out_file, &f->path_size, sizeof(i32), P_NULL);
+        P_IOStream_Write(&out_file, f->path, f->path_size, P_NULL);
 
         // Offset + size
-        P_fwrite(out_file, &f->file_offset, sizeof(size_t));
-        P_fwrite(out_file, &f->file_size, sizeof(size_t));
+        P_IOStream_Write(&out_file, &f->file_offset, sizeof(u32), P_NULL);
+        P_IOStream_Write(&out_file, &f->file_size, sizeof(u32), P_NULL);
     }
 
     // Write file contents
@@ -170,8 +170,9 @@ int main(int args_count, char* args[])
         
         LOG_INFO("Dumping %s: %s", bytes_to_human_readable(file_entry->file_size), file_entry->path);
 
-        FILE* file_io = P_fopen(file_entry->path, "r");
-        if (!file_io) {
+        P_IOStream file_io;
+
+        if (P_IOStream_FromFile(&file_io, file_entry->path, "r") != P_ERROR_OK) {
             LOG_ERROR("Failed to open file: %s, skipping!", file_entry->path);
             P_print_os_error("OS error");
             continue;
@@ -180,33 +181,37 @@ int main(int args_count, char* args[])
         void* file_buffer = P_malloc(file_entry->file_size);
         if (!file_buffer) {
             LOG_ERROR("Failed to allocate file buffer: %s, skipping!", file_entry->path);
-            P_fclose(file_io);
+            P_IOStream_Close(&file_io);
             continue;
         }
 
-        size_t read_bytes = P_fread(file_io, file_buffer, file_entry->file_size);
+        P_size read_bytes;
+        P_IOStream_Read(&file_io, file_buffer, file_entry->file_size, &read_bytes);
+
         if (read_bytes < file_entry->file_size) {
-            LOG_ERROR("Failed to read the input file fully! Written: %zu/%zu bytes.", read_bytes, file_entry->file_size);
+            LOG_ERROR("Failed to read the input file fully! Written: %zu/%u bytes.", read_bytes, file_entry->file_size);
             P_free(file_buffer);
-            P_fclose(file_io);
+            P_IOStream_Close(&file_io);
             continue;
         }
 
-        size_t written_bytes = P_fwrite(out_file, file_buffer, file_entry->file_size);
+        P_size written_bytes;
+        P_IOStream_Write(&out_file, file_buffer, file_entry->file_size, &written_bytes);
+
         if (written_bytes < file_entry->file_size) {
-            LOG_ERROR("Failed to fully write the input file into the output file! Written: %zu/%zu bytes.", written_bytes, file_entry->file_size);
+            LOG_ERROR("Failed to fully write the input file into the output file! Written: %zu/%u bytes.", written_bytes, file_entry->file_size);
             P_free(file_buffer);
-            P_fclose(file_io);
+            P_IOStream_Close(&file_io);
             continue;
         }
 
         P_free(file_buffer);
-        P_fclose(file_io);
+        P_IOStream_Close(&file_io);
     }
 
-    size_t out_file_size = P_ftell(out_file);
+    size_t out_file_size = P_ftell(out_file.stream);
 
-    P_fclose(out_file);
+    P_IOStream_Close(&out_file);
 
     LOG_INFO("%s created successfully! Final size: %s", out_path, bytes_to_human_readable(out_file_size));
 
@@ -261,8 +266,17 @@ void convert_assets()
         char* extension = str_sub(in_file_path, str_rfind(in_file_path, '.'), -1);
  
         if (P_strcmp(extension, ".bmp") == 0) {
-            LOG_DEBUG("New image file from %s", in_file_path);
+            LOG_DEBUG("New image file from: %s", in_file_path);
             convert_bmp_to_image_and_create_neighbour_file(in_file_path);
+
+            // NOTE(vanya): Terrible hack!
+            char* base = str_sub(in_file_path, 0, str_rfind(in_file_path, '.') - 1);
+            char* new_path = str_new_formatted("%s.img", base);
+            in_files_paths[i] = new_path;
+
+        } else if (P_strcmp(extension, ".txt") == 0) {
+            LOG_DEBUG("Kept as-is: %s", in_file_path);
+        
         } else {
             LOG_DEBUG("Unhandled extension in: %s", in_file_path);
         }
@@ -270,74 +284,80 @@ void convert_assets()
 }
 
 
-size_t get_file_size(char* path)
+size_t get_file_size(char* p_path)
 {
-    FILE* f = P_fopen(path, "r");
-    if (!f) {
-        LOG_ERROR("Failed to open file: %s!", path);
+    P_IOStream f;
+    if (P_IOStream_FromFile(&f, p_path, "rb") != P_ERROR_OK) {
+        LOG_ERROR("Failed to open file: %s!", p_path);
         P_print_os_error("OS error");
         return 0;
     }
 
-    P_fseek(f, 0, P_SEEK_END);
+    P_IOStream_Seek(&f, 0, P_IO_STREAM_SEEK_MODE_END);
 
-    size_t file_size = P_ftell(f);
+    P_size file_size;
+    P_IOStream_Tell(&f, &file_size);
 
-    P_fclose(f);
+    P_IOStream_Close(&f);
 
     return file_size;
 }
 
 
-void convert_bmp_to_image_and_create_neighbour_file(const char* path)
+void convert_bmp_to_image_and_create_neighbour_file(const char* p_path)
 {
-    LOG_DEBUG("Treating %s as .bmp - converting to .img", path);
+    LOG_DEBUG("Treating %s as .bmp - converting to .img", p_path);
 
     // Read BMP
-    FILE* file_in = P_fopen(path, "rb");
+    P_IOStream file_in;
+    if (P_IOStream_FromFile(&file_in, p_path, "rb") != P_ERROR_OK) {
+        LOG_ERROR("Failed to open input file!");
+        return;
+    }
 
     u16 magic_number;
-    P_fread(file_in, &magic_number, sizeof(magic_number));
+    P_IOStream_Read(&file_in, &magic_number, sizeof(magic_number), NULL);
+
     if (magic_number != 0x4D42) { // BM
         LOG_ERROR("Did not find magic number in header!");
-        P_fclose(file_in);
+        P_IOStream_Close(&file_in);
         return;
     }
 
     // Data offset
-    P_fseek(file_in, 10, P_SEEK_SET);
+    P_IOStream_Seek(&file_in, 10, P_IO_STREAM_SEEK_MODE_SET);
     u32 data_offset;
-    P_fread(file_in, &data_offset, sizeof(data_offset));
+    P_IOStream_Read(&file_in, &data_offset, sizeof(data_offset), NULL);
 
     // Dimensions
-    P_fseek(file_in, 18, P_SEEK_SET);
+    P_IOStream_Seek(&file_in, 18, P_IO_STREAM_SEEK_MODE_SET);
     i32 width, height;
-    P_fread(file_in, &width, sizeof(i32));
-    P_fread(file_in, &height, sizeof(i32));
+    P_IOStream_Read(&file_in, &width, sizeof(width), NULL);
+    P_IOStream_Read(&file_in, &height, sizeof(height), NULL);
 
     // Bits Per Pixel
-    P_fseek(file_in, 28, P_SEEK_SET);
+    P_IOStream_Seek(&file_in, 28, P_IO_STREAM_SEEK_MODE_SET);
     u16 bpp;
-    P_fread(file_in, &bpp, sizeof(bpp));
+    P_IOStream_Read(&file_in, &bpp, sizeof(bpp), NULL);
 
     LOG_DEBUG("Format: %dx%d Bits Per Pixel: %d Data offset: %d", width, height, bpp, data_offset);
 
     // Only support 24-bit or 32-bit BMP
     if (bpp != 24 && bpp != 32) {
         LOG_ERROR("Converter only supports 24-bit or 32-bit .bmp files!");
-        P_fclose(file_in);
+        P_IOStream_Close(&file_in);
         return;
     }
 
-    //
+    // Load image buffer
     LOG_DEBUG("Reading data");
-    P_fseek(file_in, data_offset, P_SEEK_SET);
+    P_IOStream_Seek(&file_in, data_offset, P_IO_STREAM_SEEK_MODE_SET);
 
     size_t data_size = sizeof(u32) * width * height;
     u32* data = P_malloc(data_size);
     if (data == NULL) {
         LOG_ERROR("Failed to allocate buffer for image!");
-        P_fclose(file_in);
+        P_IOStream_Close(&file_in);
         return;
     }
 
@@ -345,7 +365,7 @@ void convert_bmp_to_image_and_create_neighbour_file(const char* path)
     u8* row = P_malloc(row_padded);
 
     for (int y = 0; y < height; ++y) {
-        P_fread(file_in, row, row_padded);
+        P_IOStream_Read(&file_in, row, row_padded, NULL);
 
         for (int x = 0; x < width; ++x) {
             u8 r, g, b, a = 255;
@@ -366,24 +386,23 @@ void convert_bmp_to_image_and_create_neighbour_file(const char* path)
         }
     }
 
-    P_fclose(file_in);
+    P_IOStream_Close(&file_in);
 
     // Write output file
     LOG_DEBUG("Writing output file");
 
-    char* base = str_sub(path, 0, str_rfind(path, '.') - 1);
+    char* base = str_sub(p_path, 0, str_rfind(p_path, '.') - 1);
     char* new_path = str_new_formatted("%s.img", base);
 
-    FILE* file_out = P_fopen(new_path, "wb");
-    if (file_out == NULL) {
+    P_IOStream file_out;
+    if (P_IOStream_FromFile(&file_out, new_path, "wb") != P_ERROR_OK) {
         LOG_ERROR("Failed to open output file!");
         return;
     }
 
-    P_fwrite(file_out, &width, sizeof(i32));
-    P_fwrite(file_out, &height, sizeof(i32));
-    P_fwrite(file_out, data, data_size);
+    P_IOStream_Write(&file_out, &width, sizeof(width), P_NULL);
+    P_IOStream_Write(&file_out, &height, sizeof(height), P_NULL);
+    P_IOStream_Write(&file_out, data, data_size, P_NULL);
 
-    P_fclose(file_out);
+    P_IOStream_Close(&file_out);
 }
-

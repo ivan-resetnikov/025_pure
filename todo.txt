@@ -13,6 +13,8 @@ done:
 - port i/o system to own platform layer
 - bmp loading
 - fix bmp to img conversion & img loading
+- port the STL's IO stream implementation
+- use the packed assets file
 
 wip:
 

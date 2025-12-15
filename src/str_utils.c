@@ -1,9 +1,10 @@
-#ifdef P_LINUX_X86_64
-    #include "stl_linux_x86_64.c"
+#define P_DEFINE_TYPE_SHORTHANDS
+#include "stl.c"
+
+#ifdef P_PLATFORM_LINUX_X86_64
     #include <fnmatch.h>
 #endif
-#ifdef P_WINDOWS_X86_64
-    #include "stl_windows_x86_64.c"
+#ifdef P_PLATFORM_WINDOWS_X86_64
     #include <Shlwapi.h>
 #endif
 

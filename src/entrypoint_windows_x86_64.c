@@ -1,4 +1,6 @@
-#include "stl_windows_x86_64.c"
+#define P_DEFINE_TYPE_SHORTHANDS
+#include "stl.c"
+
 #include <windows.h>
 
 
@@ -126,6 +128,3 @@ inline u32 P_pack_rgba(u8 r, u8 g, u8 b, u8 a)
 {
     return (u32)((b) | (g << 8) | (r << 16) | (a << 24) | 0xFF000000);
 }
-
-// NOTE(vanya): Payload - the game
-#include "main.c"
